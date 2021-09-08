@@ -6,6 +6,7 @@ const {
   GraphQLString,
   GraphQLInt,
   GraphQLList,
+  GraphQLNonNull,
 } = grqphql;
 
 const CompanyType = new GraphQLObjectType({
@@ -66,6 +67,52 @@ const RootQuery = new GraphQLObjectType({
   },
 });
 
+const mutation = new GraphQLObjectType({
+  name: "RootMutation",
+  fields: {
+    addUser: {
+      type: UserType,
+      args: {
+        firstName: { type: new GraphQLNonNull(GraphQLString) },
+        companyId: { type: GraphQLString },
+        age: { type: new GraphQLNonNull(GraphQLInt) },
+      },
+      resolve(parentValue, { firstName, age, companyId }) {
+        return axios
+          .post(`http://localhost:3000/users`, { firstName, age, companyId })
+          .then((res) => res.data);
+      },
+    },
+    deleteUser: {
+      type: UserType,
+      args: { id: { type: new GraphQLNonNull(GraphQLString) } },
+      resolve(parentValue, args) {
+        return axios
+          .delete(`http://localhost:3000/users/${args.id}`)
+          .then((res) => res.data);
+      },
+    },
+    updateUser: {
+      type: UserType,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLString) },
+        firstName: { type: GraphQLString },
+        companyId: { type: GraphQLString },
+        age: { type: GraphQLInt },
+      },
+      resolve(parentValue, args) {
+        return (
+          axios
+            // second value passing args as object but graphql will not update the id field alone
+            .put(`http://localhost:3000/users/${args.id}`, args)
+            .then((res) => res.data)
+        );
+      },
+    },
+  },
+});
+
 module.exports = new GraphQLSchema({
   query: RootQuery,
+  mutation,
 });
